@@ -25,7 +25,7 @@ namespace cj {
 			}
 		}
 		~Texture() {
-			glDeleteTextures(1, &id);
+			destroy();
 		}
 		void bind() {
 			glBindTexture(GL_TEXTURE_2D, id);
@@ -55,6 +55,13 @@ namespace cj {
 
 		unsigned int getId() {
 			return id;
+		}
+
+		void destroy() {
+			if (id) {
+				glDeleteTextures(1, &id);
+				id = 0;
+			}
 		}
 
 		//Activates GL_TEXTURE[spot], so try and make sure it's within GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS -1

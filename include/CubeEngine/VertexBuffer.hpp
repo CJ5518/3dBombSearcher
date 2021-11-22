@@ -15,7 +15,7 @@ namespace cj {
 	public:
 		VertexBuffer() {};
 		~VertexBuffer() {
-			glDeleteBuffers(1, &m_id);
+			destroy();
 		}
 		VertexBuffer(VertexBufferUsage usage) : m_usage(usage) {};
 		//VertexBuffer(const VertexBuffer&);
@@ -66,6 +66,13 @@ namespace cj {
 
 		void bind() {
 			glBindBuffer(GL_ARRAY_BUFFER, m_id);
+		}
+
+		void destroy() {
+			if (m_id) {
+				glDeleteBuffers(1, &m_id);
+				m_id = 0;
+			}
 		}
 
 		size_t getItemCount() const { return m_size; };

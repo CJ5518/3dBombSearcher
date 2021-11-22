@@ -11,7 +11,7 @@ namespace cj {
 		VertexArray() {};
 		//Delete the vertex array
 		~VertexArray() {
-			glDeleteVertexArrays(1, &m_id);
+			destroy();
 		}
 		//Delete those pesky operators!
 		VertexArray(const VertexArray&) = delete;
@@ -58,6 +58,13 @@ namespace cj {
 
 		unsigned int getID() {
 			return m_id;
+		}
+
+		void destroy() {
+			if (m_id) {
+				glDeleteVertexArrays(1, &m_id);
+				m_id = 0;
+			}
 		}
 
 		//Static member functions

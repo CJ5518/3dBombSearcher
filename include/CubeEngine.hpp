@@ -53,6 +53,12 @@ namespace cj {
 			VAO.flushAttributes();
 		}
 
+		void destroy() {
+			VAO.destroy();
+			VBO.destroy();
+			instancedBuffer.destroy();
+		}
+
 		VertexArray VAO;
 		VertexBuffer VBO;
 		VertexBuffer instancedBuffer;

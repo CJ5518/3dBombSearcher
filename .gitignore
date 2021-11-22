@@ -8,3 +8,4 @@ bin/*
 !bin/.gitignore
 out/
 .vs/
+*.pc

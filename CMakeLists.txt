@@ -15,7 +15,6 @@ set(3D_BOMB_SEARCHER_HEADERS
 	include/CubeEngine/Shader.hpp
 	include/CubeEngine/CubeData.hpp
 	include/CubeEngine/Camera.hpp
-	include/CubeEngine/VertexBuffer.hpp
 	include/CubeEngine/stb_image.h
 	include/CubeEngine/Texture.hpp
 	include/CubeEngineDefs.hpp

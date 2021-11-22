@@ -1,6 +1,6 @@
-prefix=C:/Users/carso/Documents/ProgrammingProjects/C++/3dBombSearcher/out/install/x86-Debug
+prefix=C:/Program Files (x86)/3dBombSearcher
 exec_prefix=${prefix}
-libdir=C:/Users/carso/Documents/ProgrammingProjects/C++/3dBombSearcher/out/install/x86-Debug/lib
+libdir=C:/Program Files (x86)/3dBombSearcher/lib
 includedir=${prefix}/include
 
 Name: glew

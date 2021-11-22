@@ -14,7 +14,7 @@ class Shader {
 public:
 	Shader() : id(0) {};
 	~Shader() {
-		glDeleteProgram(id);
+		destroy();
 	}
 	void use() {
 		glUseProgram(id);
@@ -62,6 +62,13 @@ public:
 		glDeleteShader(vertexShader);
 		glDeleteShader(fragmentShader);
 		return shaderProgram;
+	}
+
+	void destroy() {
+		if (id) {
+			glDeleteProgram(id);
+			id = 0;
+		}
 	}
 private:
 	std::string readFile(std::string fileName) {

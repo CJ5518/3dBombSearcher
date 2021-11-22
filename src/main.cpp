@@ -65,15 +65,14 @@ int main() {
 	test.model = glm::translate(test.model, glm::vec3(1.2f, 0.0f, 0.0f));
 	test.texCoords = glm::vec4(0.5f, 1.0f, 0.0f, 1.0f);
 	instanceVector.push_back(test);
-
 	engine.instancedBuffer.update(instanceVector.data(), instanceVector.size(), sizeof(InstancedData), 0);
 
 	//Set up a shader and texture
 	//Needs to be a pointer otherwise weird stuff happens and the shader gets deleted or something
-	//https://stackoverflow.com/questions/34258283/opengl-renders-in-release-mode-but-not-debug-mode
-	Shader* shader = new Shader();
-	shader->loadFromFiles("../shaders/vertex.glsl", "../shaders/frag.glsl");
-	shader->use();
+	//https://stackoverflow.com/questions/34258283/
+	Shader shader;
+	shader.loadFromFiles("../shaders/vertex.glsl", "../shaders/frag.glsl");
+	shader.use();
 
 	Texture texture("../assets/img2.png");
 	texture.glLoad();
@@ -111,13 +110,12 @@ int main() {
 		}
 		//Variable update
 		camera.variableUpdate();
-		std::cout << instanceVector.size() << std::endl;
 
 		//Draw things
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-		shader->use();
-		shader->setMat4("pv", projection * camera.viewMatrix);
+		shader.use();
+		shader.setMat4("pv", projection * camera.viewMatrix);
 
 		engine.VAO.bind();
 		glDrawArraysInstanced(GL_TRIANGLES, 0, 36, instanceVector.size());
@@ -138,7 +136,6 @@ int main() {
 
 		window.display();
 	}
-	//Shutdown
 	ImGui_ImplOpenGL3_Shutdown();
 	ImGui_ImplSFML_Shutdown();
 	ImGui::DestroyContext();
