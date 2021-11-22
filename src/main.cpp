@@ -1,4 +1,3 @@
-
 #include "GL/glew.h"
 #include "SFML/Window.hpp"
 #include "imgui.h"
