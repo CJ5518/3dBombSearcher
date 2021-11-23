@@ -7,6 +7,7 @@
 #include "CubeEngine.hpp"
 #include "glm/glm.hpp"
 #include "glm/gtc/matrix_transform.hpp"
+#include "Grid3d.hpp"
 
 #include <iostream>
 
@@ -19,7 +20,7 @@ void _stdcall debugFunc(GLenum source, GLenum type, GLuint id, GLenum severity, 
 	std::cout << message << std::endl;
 }
 
-int main() {
+int main(int argc, char** argv) {
 	//Set up opengl context settings
 	sf::ContextSettings settings;
 	settings.majorVersion = 4;
@@ -59,10 +60,10 @@ int main() {
 	std::vector<InstancedData> instanceVector;
 	InstancedData test;
 	test.model = glm::mat4(1.0f);
-	test.texCoords = glm::vec4(0.0f, 0.5f, 0.0f, 1.0f);
+	test.texCoords = glm::vec4(0.0f, 1.0f / 15.0f, 0.5f, 1.0f);
 	instanceVector.push_back(test);
 	test.model = glm::translate(test.model, glm::vec3(1.2f, 0.0f, 0.0f));
-	test.texCoords = glm::vec4(0.5f, 1.0f, 0.0f, 1.0f);
+	test.texCoords = glm::vec4(0.5f, 1.0f, 0.5f, 1.0f);
 	instanceVector.push_back(test);
 	engine.instancedBuffer.update(instanceVector.data(), instanceVector.size(), sizeof(InstancedData), 0);
 
@@ -73,7 +74,7 @@ int main() {
 	shader.loadFromFiles("../shaders/vertex.glsl", "../shaders/frag.glsl");
 	shader.use();
 
-	Texture texture("../assets/img2.png");
+	Texture texture("../assets/fullTexture.png");
 	texture.glLoad();
 	Texture::activeTexture(0);
 	texture.bind();

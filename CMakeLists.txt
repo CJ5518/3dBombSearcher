@@ -18,6 +18,7 @@ set(3D_BOMB_SEARCHER_HEADERS
 	include/CubeEngine/stb_image.h
 	include/CubeEngine/Texture.hpp
 	include/CubeEngineDefs.hpp
+	include/Grid3d.hpp
 )
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/bin")
