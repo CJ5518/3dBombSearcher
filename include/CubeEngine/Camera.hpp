@@ -49,7 +49,7 @@ public:
 	}
 
 	//Some sfml specific functions
-	void processEvent(sf::Event& event) {
+	void processEvent(const sf::Event& event) {
 		if (event.type == sf::Event::MouseButtonPressed) {
 			if (event.mouseButton.button == sf::Mouse::Button::Right) {
 				cameraMouseDownPos = glm::vec2(sf::Mouse::getPosition().x, sf::Mouse::getPosition().y);//glm::vec2(event.mouseButton.x, event.mouseButton.y);

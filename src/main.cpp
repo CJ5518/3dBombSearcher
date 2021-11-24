@@ -8,6 +8,7 @@
 #include "glm/glm.hpp"
 #include "glm/gtc/matrix_transform.hpp"
 #include "Grid3d.hpp"
+#include "Minesweeper3d.hpp"
 
 #include <iostream>
 
@@ -52,42 +53,18 @@ int main(int argc, char** argv) {
 	//This needed to be after glewInit
 	glDebugMessageCallback(debugFunc, 0);
 #endif
-	//Init the powerful 3d graphics engine
-	CubeEngine engine;
-	engine.init();
-
-	//Set up test instanced data
-	std::vector<InstancedData> instanceVector;
-	InstancedData test;
-	test.model = glm::mat4(1.0f);
-	test.texCoords = glm::vec4(0.0f, 1.0f / 15.0f, 0.5f, 1.0f);
-	instanceVector.push_back(test);
-	test.model = glm::translate(test.model, glm::vec3(1.2f, 0.0f, 0.0f));
-	test.texCoords = glm::vec4(0.5f, 1.0f, 0.5f, 1.0f);
-	instanceVector.push_back(test);
-	engine.instancedBuffer.update(instanceVector.data(), instanceVector.size(), sizeof(InstancedData), 0);
+	
+	Minesweeper3d minesweeper;
+	minesweeper.init(3,3,3,3);
 
 	//Set up a shader and texture
 	//Needs to be a pointer otherwise weird stuff happens and the shader gets deleted or something
 	//https://stackoverflow.com/questions/34258283/
-	Shader shader;
-	shader.loadFromFiles("../shaders/vertex.glsl", "../shaders/frag.glsl");
-	shader.use();
-
-	Texture texture("../assets/fullTexture.png");
-	texture.glLoad();
-	Texture::activeTexture(0);
-	texture.bind();
 
 	//Set up ImGui
 	ImGui::CreateContext();
 	ImGui_ImplSFML_InitForOpenGL(&window);
 	ImGui_ImplOpenGL3_Init("#version 330 core");
-
-	//Set up projection matrix and camera
-	glm::mat4 projection = glm::perspective(glm::radians(45.0f), (float)8 / (float)6, 0.1f, 100.0f);
-	Camera camera;
-	camera.sensitivity = 0.1f;
 
 	//The main loop
 	sf::Event event;
@@ -97,6 +74,7 @@ int main(int argc, char** argv) {
 		//Process events
 		while (window.pollEvent(event)) {
 			ImGui_ImplSFML_ProcessEvent(event);
+			minesweeper.processEvent(event, window);
 			//camera.processEvent(event);
 			if (event.type == sf::Event::Closed) {
 				running = false;
@@ -104,22 +82,15 @@ int main(int argc, char** argv) {
 
 			if (event.type == sf::Event::Resized) {
 				glViewport(0, 0, window.getSize().x, window.getSize().y);
-				projection = glm::perspective(glm::radians(45.0f), (float)window.getSize().x / (float)window.getSize().y, 0.1f, 100.0f);
 			}
-			camera.processEvent(event);
 		}
 		//Variable update
-		camera.variableUpdate();
+		minesweeper.update(deltaClock.restart().asSeconds());
 
 		//Draw things
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-		shader.use();
-		shader.setMat4("pv", projection * camera.viewMatrix);
-
-		engine.VAO.bind();
-		glDrawArraysInstanced(GL_TRIANGLES, 0, 36, instanceVector.size());
-		glBindVertexArray(0);
+		minesweeper.draw();
 		
 		//ImGui step
 

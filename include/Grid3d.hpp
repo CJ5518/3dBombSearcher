@@ -44,6 +44,10 @@ namespace cj{
 			return m_sizeZ;
 		}
 
+		size_t totalSize() {
+			return m_sizeZ * m_sizeY * m_sizeX;
+		}
+
 		void destroy() {
 			delete[] m_array;
 		}

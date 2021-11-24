@@ -12,18 +12,27 @@
 namespace cj {
 	class Texture {
 	public:
+		Texture() {};
 		Texture(std::string filename) {
+			loadFromFile(filename);
+		}
+
+		bool loadFromFile(std::string filename) {
 			this->_filename = filename;
 
 			if (!fileExists(_filename)) {
 				//Do some exception stuff
 				std::cout << _filename << " does not exist" << std::endl;
+				return false;
 			}
 			imageData = stbi_load(_filename.c_str(), &width, &height, &nChannels, 0);
 			if (!imageData) {
 				std::cout << _filename << " yielded no data" << std::endl;
+				return false;
 			}
+			return true;
 		}
+
 		~Texture() {
 			destroy();
 		}
@@ -47,7 +56,7 @@ namespace cj {
 			glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, imageData);
 			glGenerateMipmap(GL_TEXTURE_2D);
 
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 
 			stbi_image_free(imageData);

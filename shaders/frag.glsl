@@ -16,7 +16,6 @@ void main(){
 	float intervalSizeY = fragTexCoordOffset.z - fragTexCoordOffset.w;
 	vec2 scaledTexCoords = vec2((fragTexCoord.x * intervalSizeX) + fragTexCoordOffset.x, (fragTexCoord.y * intervalSizeY) + fragTexCoordOffset.z);
 	vec4 tex1 = texture(tex, scaledTexCoords);
-	//color = vec4(1.0f,0.0f,0.0f,1.0f);
 	color = tex1;
 	//if (tex1.a < 0.1) discard;
 }
