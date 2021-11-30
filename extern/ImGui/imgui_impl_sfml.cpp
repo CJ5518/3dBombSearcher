@@ -125,7 +125,7 @@ bool ImGui_ImplSFML_ProcessEvent(sf::Event event) {
 #ifdef _WIN32
 			io.KeySuper = false;
 #else
-			io.KeySuper = ((SDL_GetModState() & KMOD_GUI) != 0);
+			//io.KeySuper = ((SDL_GetModState() & KMOD_GUI) != 0);
 #endif
 			return true;
 		}
