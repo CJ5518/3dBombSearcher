@@ -28,6 +28,21 @@ namespace cj {
 		Shader shader;
 		Texture texture;
 
+		//Kindof a dumb function that puts the minesweeper number into the right texture coords
+		glm::vec4 getTextureCoordsFromNumber(int n) {
+			int x = n - 1;
+			int y = 0;
+			if (n >= 16 || n == 0) {
+				y = 1;
+				x = n - 16;
+			}
+			if (n == 0) {
+				x = 13;
+			}
+			return glm::vec4(x / 15.0f, (x + 1) / 15.0f, 1.0f - ((y + 1) / 2.0f), 1.0f * ((2-y) / 2.0f));
+
+		}
+
 		void init(int sizeX, int sizeY, int sizeZ, int bombCount) {
 			logicBoard.create(sizeX, sizeY, sizeZ);
 			drawingBoard.create(sizeX, sizeY, sizeZ);
@@ -35,10 +50,14 @@ namespace cj {
 			for (int x = 0; x < sizeX; x++) {
 				for (int y = 0; y < sizeY; y++) {
 					for (int z = 0; z < sizeZ; z++) {
+						//Gen the logical bit
+
+
+						//Gen the drawing data
 						InstancedData data;
 						data.model = glm::identity<glm::mat4>();
-						data.model = glm::translate(data.model, glm::vec3(x, y, z));
-						data.texCoords = glm::vec4(0.0f, 1.0f / 15.0f, 0.5f, 1.0f);
+						data.model = glm::translate(data.model, glm::vec3(x * 1.1f, y * 1.1f, z * 1.1f));
+						data.texCoords = getTextureCoordsFromNumber(1);//glm::vec4(0.0f, 1.0f / 15.0f, 0.5f, 1.0f);
 						drawingBoard.set(data, x, y, z);
 					}
 				}
@@ -69,19 +88,35 @@ namespace cj {
 		void update(float dt) {
 			camera.variableUpdate();
 		}
-
+		int del = 0;
 		void draw() {
+
+			for (int q = 0; q < drawingBoard.totalSize(); q++) {
+				drawingBoard.get(q).texCoords = getTextureCoordsFromNumber((del++ / 1200) % 28);
+			}
+			std::cout << (del++ / 1200) % 28 << std::endl;
+			engine.instancedBuffer.update(drawingBoard.m_array, drawingBoard.totalSize(), sizeof(InstancedData), 0);
+
 			shader.use();
 			shader.setMat4("pv", projection * camera.viewMatrix);
+			shader.setInt("selectedID", -1);
 
 			engine.VAO.bind();
-			std::cout << drawingBoard.totalSize() << std::endl;
 			glDrawArraysInstanced(GL_TRIANGLES, 0, 36, drawingBoard.totalSize());
 			glBindVertexArray(0);
 		}
 
 		void destroy() {
 
+		}
+
+		//Do a raycast in this little minesweeper world
+		//Returns the index of the hit minesweeper block
+		//Please make direction a unit vector
+		const float rayCastMaxDistance = 10.0f;
+		const float rayCastStepDistance = 0.5f;
+		int raycast(glm::vec3 position, glm::vec3 direction) {
+			glm::vec3 checkingPoint;
 		}
 
 	};

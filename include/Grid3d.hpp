@@ -24,6 +24,10 @@ namespace cj{
 			return m_array[coordsToIdx(xIdx, yIdx, zIdx)];
 		}
 
+		T& get(size_t idx) {
+			return m_array[idx];
+		}
+
 		void set(const T& thing, size_t xIdx, size_t yIdx, size_t zIdx) {
 			m_array[coordsToIdx(xIdx, yIdx, zIdx)] = thing;
 		}

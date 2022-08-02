@@ -1,15 +1,22 @@
+
+//Open gl
 #include "GL/glew.h"
+//Windowing
 #include "SFML/Window.hpp"
+//ImGui
 #include "imgui.h"
 #include "imgui_impl_opengl3.h"
 #include "imgui_impl_sfml.h"
-
-#include "CubeEngine.hpp"
+//glm math
 #include "glm/glm.hpp"
 #include "glm/gtc/matrix_transform.hpp"
+
+//Cj headers
+#include "CubeEngine.hpp"
 #include "Grid3d.hpp"
 #include "Minesweeper3d.hpp"
 
+//Standard libs
 #include <iostream>
 
 using namespace cj;
@@ -73,9 +80,9 @@ int main(int argc, char** argv) {
 	while (running) {
 		//Process events
 		while (window.pollEvent(event)) {
+			//Send events to other things
 			ImGui_ImplSFML_ProcessEvent(event);
 			minesweeper.processEvent(event, window);
-			//camera.processEvent(event);
 			if (event.type == sf::Event::Closed) {
 				running = false;
 			}
@@ -84,32 +91,42 @@ int main(int argc, char** argv) {
 				glViewport(0, 0, window.getSize().x, window.getSize().y);
 			}
 		}
+
 		//Variable update
 		minesweeper.update(deltaClock.restart().asSeconds());
+
+		//---------------------------------------------
 
 		//Draw things
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 		minesweeper.draw();
+
+		//-------------------------------------------- -
 		
 		//ImGui step
 
+		//Init
 		ImGui_ImplOpenGL3_NewFrame();
 		ImGui_ImplSFML_NewFrame(&window);
 		ImGui::NewFrame();
 
+		//Actual fun time ImGui stuff
 		ImGui::Begin("Window");
 		ImGui::End();
 
+		//Render
 		ImGui::Render();
 		ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
 
 		window.display();
 	}
+	//Shutdown ImGui
 	ImGui_ImplOpenGL3_Shutdown();
 	ImGui_ImplSFML_Shutdown();
 	ImGui::DestroyContext();
+
 	window.close();
 
 	return 0;
