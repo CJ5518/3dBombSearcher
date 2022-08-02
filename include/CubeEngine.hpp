@@ -17,6 +17,7 @@ namespace cj {
 		CubeEngine() {};
 		//Init the cube engine
 		void init() {
+			//Load cubeData into a vertex array
 			CubeData cubeData;
 			std::vector<Vertex> vertices;
 			for (int q = 0; q < cubeData.cubeIndices.size(); q++) {
@@ -59,9 +60,14 @@ namespace cj {
 			instancedBuffer.destroy();
 		}
 
+		//Buffers
 		VertexArray VAO;
 		VertexBuffer VBO;
 		VertexBuffer instancedBuffer;
+
+		~CubeEngine() {
+			destroy();
+		}
 
 		//Delete copy constructor and such
 		CubeEngine(const CubeEngine&) = delete;

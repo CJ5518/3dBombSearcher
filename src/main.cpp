@@ -21,7 +21,7 @@
 
 using namespace cj;
 
-#define GL_DEBUG 1
+#define GL_DEBUG 0
 
 //Used if GL_DEBUG is true
 void _stdcall debugFunc(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar* message, const void* userParam) {
@@ -61,7 +61,7 @@ int main(int argc, char** argv) {
 	glDebugMessageCallback(debugFunc, 0);
 #endif
 	
-	Minesweeper3d minesweeper;
+	Minesweeper3d minesweeper(window);
 	minesweeper.init(3,3,3,3);
 
 	//Set up a shader and texture
@@ -102,7 +102,7 @@ int main(int argc, char** argv) {
 
 		minesweeper.draw();
 
-		//-------------------------------------------- -
+		//---------------------------------------------
 		
 		//ImGui step
 
@@ -112,8 +112,7 @@ int main(int argc, char** argv) {
 		ImGui::NewFrame();
 
 		//Actual fun time ImGui stuff
-		ImGui::Begin("Window");
-		ImGui::End();
+		minesweeper.imguiStep();
 
 		//Render
 		ImGui::Render();
