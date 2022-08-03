@@ -43,6 +43,8 @@ namespace cj {
 		Texture texture;
 		//The idx of the block we are hovering over with the mouse
 		int hoverBlockIdx = -1;
+		//The factor applied to the distance between the blocks, 1 is edges touching, 2 is one block apart, etc.
+		float blockDistanceFactor = 1.2f;
 
 		//Kindof a dumb function that gets the right texture coords from the minesweeper number
 		//Dumb in the way it works internally
@@ -70,19 +72,42 @@ namespace cj {
 			logicBoard.create(sizeX, sizeY, sizeZ);
 			drawingBoard.create(sizeX, sizeY, sizeZ);
 
+			//Set all the tiles to 0
+			memset(logicBoard.m_array, 0, logicBoard.totalSize() * sizeof(MinesweeperTile));
+
+			//Place bombs randomly
+			for (int q = 0; q < bombCount; q++) {
+				while (true) {
+					int tileChoice = rand() % logicBoard.totalSize();
+					if (!logicBoard.get(tileChoice).mine) {
+						logicBoard.get(tileChoice).mine = true;
+						break;
+					}
+				}
+			}
+
 			//For every tile
 			for (int x = 0; x < sizeX; x++) {
 				for (int y = 0; y < sizeY; y++) {
 					for (int z = 0; z < sizeZ; z++) {
-						//Gen the logical bit
-
+						//Calculate the number on this block
+						MinesweeperTile tile = logicBoard.get(x, y, z);
+						int neighborIndices[26];
+						logicBoard.getNeighborIndices(logicBoard.coordsToIdx(x, y, z), neighborIndices);
+						for (int q = 0; q < 26; q++) {
+							if (neighborIndices[q] < 0) break;
+							if (logicBoard.get(neighborIndices[q]).mine) {
+								tile.number++;
+							}
+						}
+						tile.revealed = true;
 
 						//Gen the drawing data
 						InstancedData data;
 						data.model = glm::identity<glm::mat4>();
 						//data.model = glm::scale(data.model, glm::vec3(2, 2, 2));
 						data.model = glm::translate(data.model, glm::vec3(x * 1.1f, y * 1.1f, z * 1.1f));
-						data.texCoords = getTextureCoordsFromNumber(1);//glm::vec4(0.0f, 1.0f / 15.0f, 0.5f, 1.0f);
+						data.texCoords = getTextureCoordsFromNumber(tile.mine ? 29 : tile.number);//glm::vec4(0.0f, 1.0f / 15.0f, 0.5f, 1.0f);
 						drawingBoard.set(data, x, y, z);
 						//This is right btw
 						//printf("%d %d %d, %f %f %f, scale: %f\n", x, y, z, data.model[3][0], data.model[3][1], data.model[3][2], data.model[0][0]);
@@ -133,16 +158,22 @@ namespace cj {
 		}
 		
 		//Draw the minesweeper
-		int del = 0;
 		void draw() {
 			//Update the instanced buffer to reflect the new data
 			//A way to omptimize would be to only update if things change
+
+			for (int q = 0; q < drawingBoard.totalSize(); q++) {
+				int x, y, z;
+				drawingBoard.idxToCoord(q, &x,&y,&z);
+				//data.model = glm::scale(data.model, glm::vec3(2, 2, 2));
+				drawingBoard.get(q).model = glm::translate(glm::identity<glm::mat4>(),
+					glm::vec3(x * blockDistanceFactor, y * blockDistanceFactor, z * blockDistanceFactor)
+				);
+			}
 			engine.instancedBuffer.update(drawingBoard.m_array, drawingBoard.totalSize(), sizeof(InstancedData), 0);
 
 			shader.use();
 			shader.setMat4("pv", projection * camera.viewMatrix);
-
-
 
 			shader.setInt("selectedID", hoverBlockIdx);
 
@@ -154,7 +185,7 @@ namespace cj {
 		void imguiStep() {
 			ImGui::Begin("Minesweeper");
 
-			ImGui::Text("Hello, world!");
+			ImGui::SliderFloat("Block distance", &blockDistanceFactor, 1.0f, 3.0f);
 
 			ImGui::End();
 		}
@@ -181,7 +212,6 @@ namespace cj {
 					//The center of the cube
 					glm::vec3 cubeCenter = glm::vec3(cubeData.model[3][0], cubeData.model[3][1], cubeData.model[3][2]);
 					if (glm::length(cubeCenter - checkingPoint) <= 1.0f) {
-						printf("%d\n", q);
 						return q;
 					}
 

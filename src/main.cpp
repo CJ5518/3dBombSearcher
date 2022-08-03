@@ -38,6 +38,8 @@ int main(int argc, char** argv) {
 	settings.antialiasingLevel = 0;
 	settings.attributeFlags = sf::ContextSettings::Attribute::Core;
 
+	srand(time(0));
+
 	//Extra debug info
 #if GL_DEBUG
 	settings.attributeFlags = sf::ContextSettings::Attribute::Debug;
