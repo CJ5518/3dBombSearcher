@@ -24,5 +24,5 @@ void main(){
 	//Get selection stuff
 	float selectionModifier = 1.5f - ((1.0f - float(int(abs(fragInstanceID - selectedID)) == 0)) / 2.0f);
 	color = tex1 * selectionModifier;
-	//if (tex1.a < 0.1) discard;
+	if (color.a < 0.9) discard;
 }

@@ -31,6 +31,9 @@ namespace cj {
 		Grid3d<MinesweeperTile> logicBoard;
 		//Another grid, this time holding drawing data
 		Grid3d<InstancedData> drawingBoard;
+		//Does the drawing board need to be updated?
+		//Things that mess with it should change this value themselves
+		bool drawingBoardChanged = false;
 		//Projection matrix
 		glm::mat4 projection;
 		//Camera
@@ -44,7 +47,15 @@ namespace cj {
 		//The idx of the block we are hovering over with the mouse
 		int hoverBlockIdx = -1;
 		//The factor applied to the distance between the blocks, 1 is edges touching, 2 is one block apart, etc.
-		float blockDistanceFactor = 1.2f;
+		float blockDistanceX = 1.0f;
+		float blockDistanceY = 1.0f;
+		float blockDistanceZ = 1.0f;
+
+		//ImGui board generation things
+		int imGuiSizeX = 0;
+		int imGuiSizeY = 0;
+		int imGuiSizeZ = 0;
+		int imGuiBombCount = 0;
 
 		//Kindof a dumb function that gets the right texture coords from the minesweeper number
 		//Dumb in the way it works internally
@@ -68,9 +79,39 @@ namespace cj {
 
 		//Initialize the minesweeper
 		void init(int sizeX, int sizeY, int sizeZ, int bombCount) {
+			//Init the drawing
+			engine.init();
+			initBoard(sizeX, sizeY, sizeZ, bombCount);
+			engine.instancedBuffer.update(drawingBoard.m_array, drawingBoard.totalSize(), sizeof(InstancedData), 0);
+
+			//More rendering setup
+			projection = glm::perspective(glm::radians(45.0f), (float)8 / (float)6, 0.1f, 100.0f);
+			camera.sensitivity = 0.1f;
+
+			shader.loadFromFiles("../shaders/vertex.glsl", "../shaders/frag.glsl");
+			shader.use();
+
+			texture.loadFromFile("../assets/fullTexture.png");
+			texture.glLoad();
+			Texture::activeTexture(0);
+			texture.bind();
+		}
+
+		void initBoard(int sizeX, int sizeY, int sizeZ, int bombCount) {
 			//Create the logic and drawing boards
 			logicBoard.create(sizeX, sizeY, sizeZ);
 			drawingBoard.create(sizeX, sizeY, sizeZ);
+
+			//Cap the bomb count
+			if (bombCount >= sizeX * sizeY * sizeZ) {
+				bombCount = (sizeX * sizeY * sizeZ) - 2;
+			}
+
+			imGuiSizeX = sizeX;
+			imGuiSizeY = sizeY;
+			imGuiSizeZ = sizeZ;
+			imGuiBombCount = bombCount;
+			drawingBoardChanged = true;
 
 			//Set all the tiles to 0
 			memset(logicBoard.m_array, 0, logicBoard.totalSize() * sizeof(MinesweeperTile));
@@ -106,7 +147,9 @@ namespace cj {
 						InstancedData data;
 						data.model = glm::identity<glm::mat4>();
 						//data.model = glm::scale(data.model, glm::vec3(2, 2, 2));
-						data.model = glm::translate(data.model, glm::vec3(x * 1.1f, y * 1.1f, z * 1.1f));
+						data.model = glm::translate(glm::identity<glm::mat4>(),
+							glm::vec3(x * blockDistanceX, y * blockDistanceY, z * blockDistanceZ)
+						);
 						data.texCoords = getTextureCoordsFromNumber(tile.mine ? 29 : tile.number);//glm::vec4(0.0f, 1.0f / 15.0f, 0.5f, 1.0f);
 						drawingBoard.set(data, x, y, z);
 						//This is right btw
@@ -114,21 +157,6 @@ namespace cj {
 					}
 				}
 			}
-			//Init the drawing
-			engine.init();
-			engine.instancedBuffer.update(drawingBoard.m_array, drawingBoard.totalSize(), sizeof(InstancedData), 0);
-
-			//More rendering setup
-			projection = glm::perspective(glm::radians(45.0f), (float)8 / (float)6, 0.1f, 100.0f);
-			camera.sensitivity = 0.1f;
-
-			shader.loadFromFiles("../shaders/vertex.glsl", "../shaders/frag.glsl");
-			shader.use();
-
-			texture.loadFromFile("../assets/fullTexture.png");
-			texture.glLoad();
-			Texture::activeTexture(0);
-			texture.bind();
 		}
 
 		//Handle user input
@@ -160,17 +188,10 @@ namespace cj {
 		//Draw the minesweeper
 		void draw() {
 			//Update the instanced buffer to reflect the new data
-			//A way to omptimize would be to only update if things change
-
-			for (int q = 0; q < drawingBoard.totalSize(); q++) {
-				int x, y, z;
-				drawingBoard.idxToCoord(q, &x,&y,&z);
-				//data.model = glm::scale(data.model, glm::vec3(2, 2, 2));
-				drawingBoard.get(q).model = glm::translate(glm::identity<glm::mat4>(),
-					glm::vec3(x * blockDistanceFactor, y * blockDistanceFactor, z * blockDistanceFactor)
-				);
+			if (drawingBoardChanged) {
+				engine.instancedBuffer.update(drawingBoard.m_array, drawingBoard.totalSize(), sizeof(InstancedData), 0);
+				drawingBoardChanged = false;
 			}
-			engine.instancedBuffer.update(drawingBoard.m_array, drawingBoard.totalSize(), sizeof(InstancedData), 0);
 
 			shader.use();
 			shader.setMat4("pv", projection * camera.viewMatrix);
@@ -182,10 +203,46 @@ namespace cj {
 			glBindVertexArray(0);
 		}
 
+		float del = 0.0f;
 		void imguiStep() {
-			ImGui::Begin("Minesweeper");
+			ImGui::Begin("Bombsearcher");
 
-			ImGui::SliderFloat("Block distance", &blockDistanceFactor, 1.0f, 3.0f);
+			//Distance between the blocks
+			ImGui::Text("Block distance");
+			float old = blockDistanceX;
+			ImGui::SliderFloat("X##sliderX", &blockDistanceX, 1.0f, 5.0f);
+			drawingBoardChanged |= old != blockDistanceX;
+			old = blockDistanceY;
+			ImGui::SliderFloat("Y##sliderY", &blockDistanceY, 1.0f, 5.0f);
+			drawingBoardChanged |= old != blockDistanceY;
+			old = blockDistanceZ;
+			ImGui::SliderFloat("Z##sliderZ", &blockDistanceZ, 1.0f, 5.0f);
+			drawingBoardChanged |= old != blockDistanceZ;
+
+			//If things changed, update the drawing board
+			if (drawingBoardChanged) {
+				for (int q = 0; q < drawingBoard.totalSize(); q++) {
+					int x, y, z;
+					drawingBoard.idxToCoord(q, &x, &y, &z);
+					//data.model = glm::scale(data.model, glm::vec3(2, 2, 2));
+					drawingBoard.get(q).model = glm::translate(glm::identity<glm::mat4>(),
+						glm::vec3(x * blockDistanceX, y * blockDistanceY, z * blockDistanceZ)
+					);
+				}
+			}
+
+			ImGui::Separator();
+			ImGui::Text("Game size");
+			ImGui::InputInt("X", &imGuiSizeX, 1, 5);
+			ImGui::InputInt("Y", &imGuiSizeY, 1, 5);
+			ImGui::InputInt("Z", &imGuiSizeZ, 1, 5);
+
+
+			
+			ImGui::InputInt("Bombs", &imGuiBombCount, 1, 20);
+			if (ImGui::Button("Generate field")) {
+				initBoard(imGuiSizeX, imGuiSizeY, imGuiSizeZ, imGuiBombCount);
+			}
 
 			ImGui::End();
 		}
@@ -211,6 +268,10 @@ namespace cj {
 					InstancedData cubeData = drawingBoard.get(q);
 					//The center of the cube
 					glm::vec3 cubeCenter = glm::vec3(cubeData.model[3][0], cubeData.model[3][1], cubeData.model[3][2]);
+					float cubeSize = cubeData.model[0][0];
+					//Check if the checking point is inside of the cube
+					//Cubes are axis aligned always which is pretty cool
+					//if ()
 					if (glm::length(cubeCenter - checkingPoint) <= 1.0f) {
 						return q;
 					}

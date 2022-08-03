@@ -14,6 +14,9 @@ namespace cj{
 		T* m_array = nullptr;
 
 		void create(size_t sizeX, size_t sizeY, size_t sizeZ) {
+			if (m_array) {
+				destroy();
+			}
 			m_sizeX = sizeX;
 			m_sizeY = sizeY;
 			m_sizeZ = sizeZ;
