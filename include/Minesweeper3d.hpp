@@ -7,6 +7,8 @@
 #include "CubeEngine.hpp"
 #include "CubeEngineDefs.hpp"
 
+#include "SFML/Audio.hpp"
+
 namespace cj {
 	//A tile in the minesweeper board
 	struct MinesweeperTile {
@@ -47,6 +49,7 @@ namespace cj {
 		//The idx of the block we are hovering over with the mouse
 		int hoverBlockIdx = -1;
 		//The factor applied to the distance between the blocks, 1 is edges touching, 2 is one block apart, etc.
+		//Assuming that the size is 1
 		float blockDistanceX = 1.0f;
 		float blockDistanceY = 1.0f;
 		float blockDistanceZ = 1.0f;
@@ -57,13 +60,24 @@ namespace cj {
 		int imGuiSizeZ = 0;
 		int imGuiBombCount = 0;
 
-		//Kindof a dumb function that gets the right texture coords from the minesweeper number
+		//The implementation for this is in the getTextureCoordsForTile function and kinda dumb
+		//But it toggles revealing all tiles or just the ones that should be revealed
+		bool allRevealed = false;
+
+		//Kindof a dumb function that gets the right texture coords from the minesweeper tile
 		//Dumb in the way it works internally
-		glm::vec4 getTextureCoordsFromNumber(int n) {
-			//If it's less than 0 it is unrevealed
-			if (n < 0) {
+		glm::vec4 getTextureCoordsForTile(const MinesweeperTile& tile) {
+			int n = tile.number;
+			if (tile.flagged) {
+				n = 27;
+			}
+			if (!tile.revealed && !allRevealed) {
 				n = 29;
 			}
+			if (tile.mine && (tile.revealed || allRevealed)) {
+				n = 30;
+			}
+			//If n is less than 0 it is unrevealed
 			int x = n - 1;
 			int y = 0;
 			if (n >= 16 || n == 0) {
@@ -73,6 +87,7 @@ namespace cj {
 			if (n == 0) {
 				x = 12;
 			}
+			printf("%d %d,%d from %d\n", n,x,y, tile.number);
 			//I don't remember how or why this worked
 			return glm::vec4(x / 15.0f, (x + 1) / 15.0f, 1.0f - ((y + 1) / 2.0f), 1.0f * ((2-y) / 2.0f));
 		}
@@ -85,7 +100,7 @@ namespace cj {
 			engine.instancedBuffer.update(drawingBoard.m_array, drawingBoard.totalSize(), sizeof(InstancedData), 0);
 
 			//More rendering setup
-			projection = glm::perspective(glm::radians(45.0f), (float)8 / (float)6, 0.1f, 100.0f);
+			projection = glm::perspective(glm::radians(45.0f), (float)8 / (float)6, 0.1f, 1000.0f);
 			camera.sensitivity = 0.1f;
 
 			shader.loadFromFiles("../shaders/vertex.glsl", "../shaders/frag.glsl");
@@ -119,9 +134,12 @@ namespace cj {
 			//Place bombs randomly
 			for (int q = 0; q < bombCount; q++) {
 				while (true) {
-					int tileChoice = rand() % logicBoard.totalSize();
+					//RAND_MAX was too small for us
+					unsigned properRand = rand() << 15 | rand();
+					int tileChoice = properRand % logicBoard.totalSize();
 					if (!logicBoard.get(tileChoice).mine) {
 						logicBoard.get(tileChoice).mine = true;
+						logicBoard.get(tileChoice).revealed = false;
 						break;
 					}
 				}
@@ -133,15 +151,18 @@ namespace cj {
 					for (int z = 0; z < sizeZ; z++) {
 						//Calculate the number on this block
 						MinesweeperTile tile = logicBoard.get(x, y, z);
-						int neighborIndices[26];
-						logicBoard.getNeighborIndices(logicBoard.coordsToIdx(x, y, z), neighborIndices);
-						for (int q = 0; q < 26; q++) {
-							if (neighborIndices[q] < 0) break;
-							if (logicBoard.get(neighborIndices[q]).mine) {
-								tile.number++;
+						if (!tile.mine) {
+							int neighborIndices[26];
+							logicBoard.getNeighborIndices(logicBoard.coordsToIdx(x, y, z), neighborIndices);
+							for (int q = 0; q < 26; q++) {
+								if (neighborIndices[q] < 0) break;
+								if (logicBoard.get(neighborIndices[q]).mine) {
+									tile.number++;
+								}
 							}
+							tile.revealed = false;
 						}
-						tile.revealed = true;
+						logicBoard.set(tile, x, y, z);
 
 						//Gen the drawing data
 						InstancedData data;
@@ -150,7 +171,7 @@ namespace cj {
 						data.model = glm::translate(glm::identity<glm::mat4>(),
 							glm::vec3(x * blockDistanceX, y * blockDistanceY, z * blockDistanceZ)
 						);
-						data.texCoords = getTextureCoordsFromNumber(tile.mine ? 29 : tile.number);//glm::vec4(0.0f, 1.0f / 15.0f, 0.5f, 1.0f);
+						data.texCoords = getTextureCoordsForTile(tile);//glm::vec4(0.0f, 1.0f / 15.0f, 0.5f, 1.0f);
 						drawingBoard.set(data, x, y, z);
 						//This is right btw
 						//printf("%d %d %d, %f %f %f, scale: %f\n", x, y, z, data.model[3][0], data.model[3][1], data.model[3][2], data.model[0][0]);
@@ -160,11 +181,37 @@ namespace cj {
 		}
 
 		//Handle user input
+
+		//Used for the old woops I clicked down but because I didn't release the mouse on the block the thing didn't go through
+		//effect
+		int buttonDownHoverIdx = -1;
+		sf::Mouse::Button buttonPressCandidate = sf::Mouse::Button::ButtonCount;
 		void processEvent(const sf::Event& event, const sf::Window& window) {
-			if (event.type == sf::Event::Resized) {
-				projection = glm::perspective(glm::radians(45.0f), (float)window.getSize().x / (float)window.getSize().y, 0.1f, 100.0f);
-			}
+			// don't pass mouse and keyboard presses further if an ImGui widget is active
+			//But we do camera anyway
 			camera.processEvent(event);
+			auto& io = ImGui::GetIO();
+			if (io.WantCaptureMouse  || io.WantCaptureKeyboard) {
+				return;
+			}
+
+			if (event.type == sf::Event::Resized) {
+				projection = glm::perspective(glm::radians(45.0f), (float)window.getSize().x / (float)window.getSize().y, 0.1f, 1000.0f);
+			}
+
+			//Mouse button pressed events
+			if (event.type == sf::Event::MouseButtonPressed) {
+				buttonDownHoverIdx = hoverBlockIdx;
+				buttonPressCandidate = event.mouseButton.button;
+			}
+
+			//Mouse button release events
+			if (event.type == sf::Event::MouseButtonReleased) {
+				if (buttonDownHoverIdx == hoverBlockIdx && buttonPressCandidate == event.mouseButton.button) {
+					//We are now good to actually do some stuff
+
+				}
+			}
 		}
 
 		void update(float dt) {
@@ -219,18 +266,6 @@ namespace cj {
 			ImGui::SliderFloat("Z##sliderZ", &blockDistanceZ, 1.0f, 5.0f);
 			drawingBoardChanged |= old != blockDistanceZ;
 
-			//If things changed, update the drawing board
-			if (drawingBoardChanged) {
-				for (int q = 0; q < drawingBoard.totalSize(); q++) {
-					int x, y, z;
-					drawingBoard.idxToCoord(q, &x, &y, &z);
-					//data.model = glm::scale(data.model, glm::vec3(2, 2, 2));
-					drawingBoard.get(q).model = glm::translate(glm::identity<glm::mat4>(),
-						glm::vec3(x * blockDistanceX, y * blockDistanceY, z * blockDistanceZ)
-					);
-				}
-			}
-
 			ImGui::Separator();
 			ImGui::Text("Game size");
 			ImGui::InputInt("X", &imGuiSizeX, 1, 5);
@@ -243,8 +278,25 @@ namespace cj {
 			if (ImGui::Button("Generate field")) {
 				initBoard(imGuiSizeX, imGuiSizeY, imGuiSizeZ, imGuiBombCount);
 			}
+			bool oldBool = allRevealed;
+			ImGui::Checkbox("Reveal all", &allRevealed);
+			drawingBoardChanged |= oldBool != allRevealed;
 
 			ImGui::End();
+
+			//If things changed, update the drawing board
+			if (drawingBoardChanged) {
+				for (int q = 0; q < drawingBoard.totalSize(); q++) {
+					int x, y, z;
+					drawingBoard.idxToCoord(q, &x, &y, &z);
+					//data.model = glm::scale(data.model, glm::vec3(2, 2, 2));
+					drawingBoard.get(q).model = glm::translate(glm::identity<glm::mat4>(),
+						glm::vec3(x * blockDistanceX, y * blockDistanceY, z * blockDistanceZ)
+					);
+					drawingBoard.get(q).texCoords = getTextureCoordsForTile(logicBoard.get(q));
+					printf("%d\n", logicBoard.get(q).number);
+				}
+			}
 		}
 
 		void destroy() {
@@ -258,7 +310,7 @@ namespace cj {
 		//Max distance away from the camera to march
 		const float rayCastMaxDistance = 30.0f;
 		//March step size, lower values are more accurate but slower
-		const float rayCastStepDistance = 0.5f;
+		const float rayCastStepDistance = 0.1f;
 		int raycast(glm::vec3 position, glm::vec3 direction) {
 			glm::vec3 checkingPoint = position + (direction * rayCastStepDistance);
 
@@ -271,16 +323,31 @@ namespace cj {
 					float cubeSize = cubeData.model[0][0];
 					//Check if the checking point is inside of the cube
 					//Cubes are axis aligned always which is pretty cool
-					//if ()
-					if (glm::length(cubeCenter - checkingPoint) <= 1.0f) {
+					if (
+						std::abs(checkingPoint.x - cubeCenter.x) <= 0.5f
+						&& std::abs(checkingPoint.y - cubeCenter.y) <= 0.5f
+						&& std::abs(checkingPoint.z - cubeCenter.z) <= 0.5f
+						) {
 						return q;
 					}
+					//if (glm::length(cubeCenter - checkingPoint) <= 1.0f) {
+					//	return q;
+					//}
 
 				}
 				checkingPoint = checkingPoint + (direction * rayCastStepDistance);
 			}
 
 			return -1;
+		}
+
+		//Flag a tile by the idx
+		void flagTile(int tileIdx) {
+
+		}
+
+		void revealTile(int tileIdx) {
+
 		}
 
 	};

@@ -21,7 +21,13 @@
 			"buildCommandArgs": "",
 			"ctestCommandArgs": "",
 			"inheritEnvironments": [ "msvc_x86" ],
-			"variables": []
+			"variables": [
+				{
+					"name": "SFML_BUILD_AUDIO",
+					"value": "True",
+					"type": "BOOL"
+				}
+			]
 		}
 	]
 }

@@ -117,7 +117,10 @@ bool ImGui_ImplSFML_ProcessEvent(sf::Event event) {
 	case sf::Event::KeyReleased:
 		{
 			int key = event.key.code;
-			IM_ASSERT(key >= 0 && key < IM_ARRAYSIZE(io.KeysDown));
+			//Minor adjustment
+			//IM_ASSERT(key >= 0 && key < IM_ARRAYSIZE(io.KeysDown));
+			//Because adjusting the volume on my computer caused a crash
+			if (!(key >= 0 && key < IM_ARRAYSIZE(io.KeysDown))) return false;
 			io.KeysDown[key] = (event.type == sf::Event::KeyPressed);
 			io.KeyShift = event.key.shift;
 			io.KeyCtrl = event.key.control;

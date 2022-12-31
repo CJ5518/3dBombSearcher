@@ -25,7 +25,7 @@ set(3D_BOMB_SEARCHER_HEADERS
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/bin")
 set(BUILD_SHARED_LIBS OFF)
 set(SFML_STATIC_LIBRARIES TRUE)
-set(SFML_BUILD_AUDIO OFF)
+set(SFML_BUILD_AUDIO ON)
 set(SFML_BUILD_GRAPHICS OFF)
 set(SFML_BUILD_NETWORK OFF)
 
@@ -45,7 +45,7 @@ add_executable(${PROJECT_NAME} ${3D_BOMB_SEARCHER_SOURCE} ${3D_BOMB_SEARCHER_HEA
 target_include_directories(${PROJECT_NAME} PUBLIC "include")
 target_include_directories(${PROJECT_NAME} PUBLIC "extern/glew-2.1.0/include")
 
-target_link_libraries(${PROJECT_NAME} sfml-window sfml-system)
+target_link_libraries(${PROJECT_NAME} sfml-window sfml-system sfml-audio)
 target_link_libraries(${PROJECT_NAME} imgui)
 target_link_libraries(${PROJECT_NAME} glm)
 target_link_libraries(${PROJECT_NAME} glew_s)

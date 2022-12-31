@@ -58,18 +58,24 @@ public:
 
 		cameraMovement = glm::vec3(0);
 
+		float speed = 1.5f;
+
+		if (sf::Keyboard::isKeyPressed(sf::Keyboard::LShift)) {
+			speed = 10.0f;
+		}
+
 		if (sf::Keyboard::isKeyPressed(sf::Keyboard::A))
-			cameraMovement.x = -1.0f;
+			cameraMovement.x = -1.0f * speed;
 		if (sf::Keyboard::isKeyPressed(sf::Keyboard::D))
-			cameraMovement.x = 1.0f;
+			cameraMovement.x = 1.0f * speed;
 		if (sf::Keyboard::isKeyPressed(sf::Keyboard::W))
-			cameraMovement.z = -1.0f;
+			cameraMovement.z = -1.0f * speed;
 		if (sf::Keyboard::isKeyPressed(sf::Keyboard::S))
-			cameraMovement.z = 1.0f;
+			cameraMovement.z = 1.0f * speed;
 		if (sf::Keyboard::isKeyPressed(sf::Keyboard::Q))
-			cameraMovement.y = 1.0f;
+			cameraMovement.y = 1.0f * speed;
 		if (sf::Keyboard::isKeyPressed(sf::Keyboard::E))
-			cameraMovement.y = -1.0f;
+			cameraMovement.y = -1.0f * speed;
 	}
 
 	void variableUpdate() {

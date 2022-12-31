@@ -46,7 +46,7 @@ int main(int argc, char** argv) {
 	glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
 #endif
 	//Create the window
-	sf::Window window(sf::VideoMode(800,600), "Le bon titre", sf::Style::Default, settings);
+	sf::Window window(sf::VideoMode(1200,900), "Le bon titre", sf::Style::Default, settings);
 	window.setFramerateLimit(60);
 
 	//Setting up glew/opengl
