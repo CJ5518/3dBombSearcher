@@ -382,10 +382,24 @@ namespace cj {
 				//In the case of a mine we reveal and play a funny sound
 				if (tile.mine) {
 					allRevealed = true;
+					playFunnySound();
 				}
 			}
 		}
 
+		//Funny sound component
+		sf::Sound funnySound;
+		sf::SoundBuffer soundBuffers[3];
+		bool haveInitializedSound = false;
+		void playFunnySound() {
+			if (!haveInitializedSound) {
+				soundBuffers[0].loadFromFile("../assets/sounds/sm64_mario_oof.wav");
+				soundBuffers[1].loadFromFile("../assets/sounds/sm64_mario_doh.wav");
+				soundBuffers[2].loadFromFile("../assets/sounds/sm64_mario_game_over.wav");
+			}
+			funnySound.setBuffer(soundBuffers[rand() % 3]);
+			funnySound.play();
+		}
 	};
 }
 
