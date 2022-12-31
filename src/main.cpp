@@ -21,6 +21,12 @@
 
 using namespace cj;
 
+/*
+Room for optimization:
+
+In the minesweeper class we do a full graphics update at the drop of a hat, but we really don't need to a lot of the time
+*/
+
 #define GL_DEBUG 0
 
 //Used if GL_DEBUG is true

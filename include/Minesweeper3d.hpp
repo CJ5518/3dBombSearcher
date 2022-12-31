@@ -33,9 +33,6 @@ namespace cj {
 		Grid3d<MinesweeperTile> logicBoard;
 		//Another grid, this time holding drawing data
 		Grid3d<InstancedData> drawingBoard;
-		//Does the drawing board need to be updated?
-		//Things that mess with it should change this value themselves
-		bool drawingBoardChanged = false;
 		//Projection matrix
 		glm::mat4 projection;
 		//Camera
@@ -68,14 +65,15 @@ namespace cj {
 		//Dumb in the way it works internally
 		glm::vec4 getTextureCoordsForTile(const MinesweeperTile& tile) {
 			int n = tile.number;
-			if (tile.flagged) {
-				n = 27;
-			}
+
 			if (!tile.revealed && !allRevealed) {
 				n = 29;
 			}
 			if (tile.mine && (tile.revealed || allRevealed)) {
 				n = 30;
+			}
+			if (tile.flagged && !allRevealed) {
+				n = 27;
 			}
 			//If n is less than 0 it is unrevealed
 			int x = n - 1;
@@ -111,6 +109,14 @@ namespace cj {
 			texture.bind();
 		}
 
+		//Why is this like the only part of my code that has a request and not just setting a random bool?
+		//Dunno
+		//Life gets weird at midnight
+		bool needToUpdateGraphics = false;
+		void requestGraphicsUpdate() {
+			needToUpdateGraphics = true;
+		}
+
 		void initBoard(int sizeX, int sizeY, int sizeZ, int bombCount) {
 			//Create the logic and drawing boards
 			logicBoard.create(sizeX, sizeY, sizeZ);
@@ -125,7 +131,7 @@ namespace cj {
 			imGuiSizeY = sizeY;
 			imGuiSizeZ = sizeZ;
 			imGuiBombCount = bombCount;
-			drawingBoardChanged = true;
+			requestGraphicsUpdate();
 
 			//Set all the tiles to 0
 			memset(logicBoard.m_array, 0, logicBoard.totalSize() * sizeof(MinesweeperTile));
@@ -206,9 +212,14 @@ namespace cj {
 
 			//Mouse button release events
 			if (event.type == sf::Event::MouseButtonReleased) {
-				if (buttonDownHoverIdx == hoverBlockIdx && buttonPressCandidate == event.mouseButton.button) {
+				if (buttonDownHoverIdx == hoverBlockIdx && buttonPressCandidate == event.mouseButton.button && buttonDownHoverIdx >= 0) {
 					//We are now good to actually do some stuff
-
+					if (buttonPressCandidate == sf::Mouse::Button::Left) {
+						revealTile(hoverBlockIdx);
+					}
+					else if (buttonPressCandidate == sf::Mouse::Button::Right) {
+						flagTile(hoverBlockIdx);
+					}
 				}
 			}
 		}
@@ -234,9 +245,10 @@ namespace cj {
 		//Draw the minesweeper
 		void draw() {
 			//Update the instanced buffer to reflect the new data
-			if (drawingBoardChanged) {
+			if (needToUpdateGraphics) {
+				doGraphicsUpdate();
 				engine.instancedBuffer.update(drawingBoard.m_array, drawingBoard.totalSize(), sizeof(InstancedData), 0);
-				drawingBoardChanged = false;
+				needToUpdateGraphics = false;
 			}
 
 			shader.use();
@@ -251,6 +263,7 @@ namespace cj {
 
 		float del = 0.0f;
 		void imguiStep() {
+			bool drawingBoardChanged = false;
 			ImGui::Begin("Bombsearcher");
 
 			//Distance between the blocks
@@ -275,6 +288,7 @@ namespace cj {
 			
 			ImGui::InputInt("Bombs", &imGuiBombCount, 1, 20);
 			if (ImGui::Button("Generate field")) {
+				allRevealed = false;
 				initBoard(imGuiSizeX, imGuiSizeY, imGuiSizeZ, imGuiBombCount);
 			}
 			bool oldBool = allRevealed;
@@ -285,15 +299,19 @@ namespace cj {
 
 			//If things changed, update the drawing board
 			if (drawingBoardChanged) {
-				for (int q = 0; q < drawingBoard.totalSize(); q++) {
-					int x, y, z;
-					drawingBoard.idxToCoord(q, &x, &y, &z);
-					//data.model = glm::scale(data.model, glm::vec3(2, 2, 2));
-					drawingBoard.get(q).model = glm::translate(glm::identity<glm::mat4>(),
-						glm::vec3(x * blockDistanceX, y * blockDistanceY, z * blockDistanceZ)
-					);
-					drawingBoard.get(q).texCoords = getTextureCoordsForTile(logicBoard.get(q));
-				}
+				requestGraphicsUpdate();
+			}
+		}
+
+		void doGraphicsUpdate() {
+			for (int q = 0; q < drawingBoard.totalSize(); q++) {
+				int x, y, z;
+				drawingBoard.idxToCoord(q, &x, &y, &z);
+				//data.model = glm::scale(data.model, glm::vec3(2, 2, 2));
+				drawingBoard.get(q).model = glm::translate(glm::identity<glm::mat4>(),
+					glm::vec3(x * blockDistanceX, y * blockDistanceY, z * blockDistanceZ)
+				);
+				drawingBoard.get(q).texCoords = getTextureCoordsForTile(logicBoard.get(q));
 			}
 		}
 
@@ -339,13 +357,33 @@ namespace cj {
 			return -1;
 		}
 
-		//Flag a tile by the idx
+		//Toggle Flag a tile by the idx
 		void flagTile(int tileIdx) {
-
+			if (logicBoard.get(tileIdx).revealed) return;
+			logicBoard.get(tileIdx).flagged = !logicBoard.get(tileIdx).flagged;
+			requestGraphicsUpdate();
 		}
 
 		void revealTile(int tileIdx) {
+			MinesweeperTile& tile = logicBoard.get(tileIdx);
+			if (!tile.revealed && !tile.flagged) {
+				tile.revealed = true;
+				requestGraphicsUpdate();
+				//In the case of a zero we must go and reveal the neighbors
+				if (tile.number == 0 && !tile.mine) {
+					int neighborIndices[26];
+					logicBoard.getNeighborIndices(tileIdx, neighborIndices);
+					for (int q = 0; q < 26; q++) {
+						if (neighborIndices[q] < 0) break;
+						revealTile(neighborIndices[q]);
+					}
+				}
 
+				//In the case of a mine we reveal and play a funny sound
+				if (tile.mine) {
+					allRevealed = true;
+				}
+			}
 		}
 
 	};
