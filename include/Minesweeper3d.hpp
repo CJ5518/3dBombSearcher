@@ -87,7 +87,6 @@ namespace cj {
 			if (n == 0) {
 				x = 12;
 			}
-			printf("%d %d,%d from %d\n", n,x,y, tile.number);
 			//I don't remember how or why this worked
 			return glm::vec4(x / 15.0f, (x + 1) / 15.0f, 1.0f - ((y + 1) / 2.0f), 1.0f * ((2-y) / 2.0f));
 		}
@@ -294,7 +293,6 @@ namespace cj {
 						glm::vec3(x * blockDistanceX, y * blockDistanceY, z * blockDistanceZ)
 					);
 					drawingBoard.get(q).texCoords = getTextureCoordsForTile(logicBoard.get(q));
-					printf("%d\n", logicBoard.get(q).number);
 				}
 			}
 		}
